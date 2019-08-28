@@ -101,7 +101,7 @@ class Agent() :
         self.otherAgents.append(agent)
         
     def _getAgents(self) :
-        return self.otherAgents
+        return self.otherAgents 
     
     def _setForbidenAgents(self, forbidenIds:list) :
         for id_a in forbidenIds :
