@@ -16,10 +16,16 @@ import time
 import tensorflow as tf
 import numpy as np
 from threading import Thread, RLock
+from confluent_kafka import Consumer, KafkaError
+from confluent_kafka import TopicPartition
+from json import loads
+
 
 VERROU = RLock()
 BADREWARD = -5
 GOODREWARD = 5
+
+#UN BROKER PAR ZONE
 
 def threaded(fn):
     def wrapper(*args, **kwargs):
@@ -60,38 +66,48 @@ class Toolbox() :
 class State() :
     
     def __init__(self, qfunction) :
+        self.nbOtherAgents = 0
         self.qfunction: object = qfunction
-        self.light = [1,0]
-        self.nCars = [0]
-        self.nPedestrian = [0]
-        self.saveCars = [0]
-        self.savePedestrian = [0]
-        self.agentState = []
-        self.forbidenAgents:list = []
-        self.otherAgents:list = []
-        self.state = list(self.light) + list(self.nCars) + list(self.nPedestrian) + list(self.agentState)
-        self.ownState = list(self.light) + list(self.nCars) + list(self.nPedestrian)
+        self.light: list = np.array([1,0])
+        self.nCars: list = np.array([0])
+        self.nPedestrian: list = np.array([0])
+        self.saveCars: list = np.array([0])
+        self.savePedestrian: list = np.array([0])
+        self.ownState = np.concatenate((self.light, self.nCars, self.nPedestrian))
+        self.otherAgentState: list = np.zeros([self.nbOtherAgents, np.size(self.ownState)])
+        self.state = np.concatenate((self.light, self.nCars, self.nPedestrian, self.otherAgentState.flat))
+        self.otherAgentScore: list = np.zeros([self.nbOtherAgents, 1])
         
-    def _update(self):
-        agentStates:list = []
-        for agent in self.otherAgents :
-            agentStates += list(agent.state._getOwnState())
-        self.agentState = list(agentStates)
-        agentStates.clear()
-        self.state = list(self.light) + list(self.nCars) + list(self.nPedestrian) + list(self.agentState)
-        self.ownState = list(self.light) + list(self.nCars) + list(self.nPedestrian)
+    def _update(self) :
+        self.light = np.array(self.light)
+        self.nCars = np.array(self.nCars)
+        self.nPedestrian = np.array(self.nPedestrian)
+        self.state = np.concatenate((self.light, self.nCars, self.nPedestrian, self.otherAgentState.flat))
+        self.ownState = np.concatenate((self.light, self.nCars, self.nPedestrian))
         
-    def _setState(self, light:list=None, nCars:list=None, nPedestrian:list=None, otherAgents:list=None, forbidenAgents:list=None) :
+    def _setState(self, light:list=None, nCars:list=None, nPedestrian:list=None) :
         self.light = light or self.light
         self.nCars = nCars or self.nCars
         self.nPedestrian = nPedestrian or self.nPedestrian
-        self.otherAgents = otherAgents or self.otherAgents
-        self.forbidenAgents = forbidenAgents or self.forbidenAgents
-        self._update()        
+        self._update()
+       
+    def _setOtherAgentState(self, index: int, state: list) :
+        self.otherAgentState[index] = np.array(state)
+        self._update()
+        
+    def _setOtherAgentScore(self, index: int, score: int) :
+        self.otherAgentScore[index] = score
+
     def _setSave(self, saveCars:list=None, savePedestrian:list=None) :
         self.saveCars = saveCars or self.saveCars
         self.savePedestrian = savePedestrian or self.savePedestrian
-        
+    
+    def _setNbOtherAgents(self, nb:int) :
+        self.nbOtherAgents += nb
+        self.otherAgentScore: list = np.zeros([self.nbOtherAgents, 1])
+        self.otherAgentState: list = np.zeros([self.nbOtherAgents, np.size(self.ownState)])
+        self._update()
+    
     def _getState(self):
         return np.array(self.state).astype("float64")
     def _getOwnState(self):
@@ -102,14 +118,12 @@ class State() :
         return self.nCars[0]
     def _getnPedestrian(self):
         return self.nPedestrian[0]
-    def _getForbidenAgents(self):
-        return self.forbidenAgents
-    def _getOtherAgents(self) :
-        return self.otherAgents
     def _getSaveCars(self) :
         return self.saveCars[0]
     def _getSavePedestrian(self):
         return self.savePedestrian[0]
+    def _getOtherAgentScore(self) :
+        return np.sum(self.otherAgentScore)
     
 class Dataset() :
 
@@ -129,33 +143,43 @@ class Agent() :
         self.toolbox = toolbox
         self.qfunction = qfunction
         self.myId:int = myId
+        self.consumer = None
+        self.queue: int = 0
+        self.forbidenQueue: int = 0
+        self.otherAgents: list = []
+        self.forbidenAgents: list = []
         
     def _setAgents(self, agents:list) :
-        newAgents:list = self.state._getOtherAgents()
+        newAgents: list = list(self.otherAgents)
+        nbOtherAgents: int = 0
         for agent in agents :
-            newAgents.append(agent)
-        self.state._setState(otherAgents=newAgents)      
+            newAgents.append({agent.myId:self.queue})
+            nbOtherAgents += 1
+            self.queue += 1
+        self.state._setNbOtherAgents(nbOtherAgents)  
+        self.otherAgents = list(newAgents)      
     
     def _setForbidenAgents(self, forbidenIds:list) :
-        forbidenAgents:list = []
-        agents:list = self.state._getOtherAgents()
-        newForbidenAgents:list = self.state._getForbidenAgents()
-        for id_a in forbidenIds :
-            for agent in agents :
-                if id_a == agent.myId:
-                    forbidenAgents.append(agent)
-        for forbidenAgent in forbidenAgents :
-            newForbidenAgents.append(forbidenAgent)
-        self.state._setState(forbidenAgents=newForbidenAgents)
-        #self._take_action(1)
-                    
-    def _getForbidenAgents(self) :
-        return self.state._getForbidenAgents
-    def _getAgents(self) :
-        return self.state._getOtherAgents                
-    #def _getStateWithUpdate(self):
-     #   self._updateAgentStates()
-      #  return self.state._getState()
+        otherAgents:list = list(self.otherAgents)
+        newForbidenAgents:list = list(self.forbidenAgents)
+        for _id in forbidenIds :
+            for dictData in otherAgents :
+                for key in dictData :
+                    if key == _id :
+                        newForbidenAgents.append({_id : self.forbidenQueue})
+                        self.forbidenQueue += 1
+        self.forbidenAgents = list(newForbidenAgents)
+        
+    def _setConsumer(self, config:dict) :
+        self.consumer = Consumer(config)
+        
+    def _getQueueNumber(self, _id: int) :
+        otherAgents: list = self.otherAgents
+        for dictData in otherAgents :
+            for key in dictData : 
+                if key == _id:
+                    return dictData[key]
+
     def _getScore(self) :
         actual = self.state._getnCars() + self.state._getnPedestrian() 
         ancien = self.state._getSaveCars() + self.state._getSavePedestrian()
@@ -167,15 +191,10 @@ class Agent() :
     #revoir le system de score si il y a beaucoup de voiture sur l'autre agent il faut passer au rouge pour augmenter son score
     def _getGlobalScore(self) :
         globalScore: int = self._getScore()
-        otherAgents: list = self.state._getOtherAgents()
-        for otherAgent in otherAgents :
-                globalScore += agent._getScore()
+        globalScore += self.state._getOtherAgentScore()
         return globalScore
     
     def _take_action(self, eps):
-        #self._updateAgentStates()
-        #print(np.shape(self.state.state))
-        forbidenAgents: list = self.state._getForbidenAgents()
         if np.random.uniform(0, 1) < eps:
             action = np.random.randint(0, 2)
             newLight = list(self.toolbox._one_hot(np.array(action), 2))
@@ -183,74 +202,117 @@ class Agent() :
             action = self.qfunction(np.expand_dims(self.state._getState(), 0).astype("float64"))
             newLight = list(self.toolbox._one_hot(np.argmax(action), 2))
         self.state._setState(light=newLight)
-        for forbidenAgent in forbidenAgents :
-            forbidenAgent.state._setState(light=list(self.state.light[::-1]))
-            #print(forbidenAgent.state._getLight(), "=", self.state._getLight())
-        #self._updateAgentStates()
         return  newLight
     
-    @threaded
+  #  def FOLLOWER_FUNCTION() :
+   #     CONSUME(ACTION INVERSE, voiture pedestrian)  TOPIC GENERAL
+    #    TAKE ACTION THAT I HAVE CONSUME
+     #   UPDATE MY STATE WITH CONSUME voiture pedestrian
+      #  SEND MY STATE TO ALL MY OTHER AGENT (TO EXTERN)
+    def _fromOtherAgent(self, key, jsonData, fromWho) :
+        if key == "state" :
+            self.state._setOtherAgentState(fromWho, jsonData[key])
+        if key == "score" :
+            self.state._setOtherAgentScore(fromWho, jsonData[key])
+    
+    def _fromExtern(self, key, jsonData) :
+        if key == "cars" :
+            self.state._setState(nCars=[jsonData[key]])
+        if key == "pedestrian" :
+            self.state._setState(nPedestrian=[jsonData[key]])
+
+    def _updateEnv(self, jsonData) :
+        fromWho = -2 
+        for key in jsonData :
+            if key == "from" :
+                if (jsonData[key] == -1):
+                    fromWho = -1
+                else : 
+                    fromWho = self._getQueueNumber(jsonData[key])
+            if fromWho == -1 :
+                self._fromExtern(key, jsonData)
+            elif fromWho >= 0 :
+                self._fromOtherAgent(key, jsonData, fromWho)
+        fromWho = -2
+
     def _initDataset(self) :
         eps = 1
         state = []
         action = []
         reward = []
         nextState = []
-        i = 0
-        while( i < 100):
-            #print(self.myId)
-    
-                if np.random.uniform(0, 1) < 0.5 and self.state._getLight() == [0,1] :
-                    self.state._setState(nCars=[self.state._getnCars() + 1])
-                if np.random.uniform(0, 1) < 0.3 and self.state._getLight() == [1,0] :
-                    self.state._setState(nPedestrian=[self.state._getnPedestrian() + 1])
-                if self.state._getLight() == [1,0]:
-                    if self.state._getnCars() != 0 :
-                        self.state._setState(nCars=[self.state._getnCars() - 1])
-                if self.state._getLight() == [0,1]:
-                    if self.state._getnPedestrian() != 0 :
-                        self.state._setState(nPedestrian=[self.state._getnPedestrian() - 1])
-
-                if (np.random.uniform(0, 1) < 1) and len(self.state._getForbidenAgents()) > 0:       
-                     tmpState = self.state._getState()
-                     tmpAction = self._take_action(eps)
-                     tmpReward = self._getGlobalScore()
-                     tmpNextState = self.state._getState()
-                     state.append(tmpState)
-                     action.append(tmpAction)
-                     reward.append(tmpReward)
-                     nextState.append(tmpNextState)
-                     print(self.myId, str(tmpState) , str(tmpAction), str(tmpReward))
-                     if i % 5 == 0 and i != 0 :
-                         self.dataset.train(np.array(state), np.expand_dims(reward, 1), np.array(nextState), np.array(action), self.toolbox)
-                         state.clear()
-                         action.clear()
-                         reward.clear()
-                         nextState.clear()
-                         if eps > 0.3 :
-                             eps -= 0.1
-                i += 1
+        tp = TopicPartition('test', 0)
+        self.consumer.assign([tp])
+        while True:
+            msg = self.consumer.poll(1.0)
+            if msg is None:
+                continue
+            if msg.error():
+                print("Consumer error: {}".format(msg.error()))
+                continue
+            jsonData = loads(msg.value().decode('utf-8'))
+            if len(nextState) == (len(state) - 1) :
+                tmpNextState = self.state._getState()
+                nextState.append(tmpNextState)
+            self._updateEnv(jsonData)
+            tmpState = self.state._getState() #STATE GLOBAL
+            tmpAction = self._take_action(eps)
+            #SENDTOFORBIDEN TAKE INVERSE ACTION (TO INVERSE)
+            tmpReward = self._getGlobalScore()
+            #SEND TO ALL MY OTHER AGENT MY STATE (TO EXTERN)
+            state.append(tmpState)
+            action.append(tmpAction)
+            reward.append(tmpReward)
+            print(np.shape(state), np.shape(nextState))
+            if len(state) == 4 and len(nextState) == 3:
+                state = state[0:-1]
+                action = action[0:-1]
+                reward = reward[0:-1]
+                self.dataset.train(np.array(state), np.expand_dims(reward, 1), np.array(nextState), np.array(action), self.toolbox)
+                state.clear()
+                action.clear()
+                reward.clear()
+                nextState.clear()
+                if eps > 0.3 :
+                    eps -= 0.1
      
-def newAgent(myId:int) :
+def newAgent(myId:int, consumerConfig:dict) :
     qfunction = Qfunction()
     state = State(qfunction)
     toolbox = Toolbox(qfunction)
     dataset = Dataset()
     agent = Agent(dataset, state, toolbox, qfunction, myId)
+    agent._setConsumer(consumerConfig)
     return agent
 
 
-    
-agent = newAgent(0)
-agent_two = newAgent(1)
+consumerConfig0 = {
+                'bootstrap.servers': 'localhost:9092',
+                'group.id': 'mygroup',
+                'auto.offset.reset': 'earliest'
+                }
+consumerConfig1 = {
+                'bootstrap.servers': 'localhost:9092',
+                'group.id': 'mygroup',
+                'auto.offset.reset': 'earliest'
+                }
+agent = newAgent(0, consumerConfig0)
+agent_two = newAgent(1, consumerConfig1)
 agent._setAgents([agent_two])
 agent._setForbidenAgents([1])
-handle1 = agent._initDataset()
-handle2 = agent_two._initDataset()
-handle1.join()
-handle2.join()
+agent._initDataset()
 
 
+np.shape(list(np.zeros([4,4]).flat))
+toto = np.array([0])
+tota = np.array([0,1])
+np.concatenate((toto, tota))
 
+
+f = dict({"hhelo": 5})
+print(f["hhelo"])
+
+toto = [[5,1,5],[1,5,3],[6,7,5]]
+toto[0:-1]
 
 np.array([0,0,0]).astype("float64")
