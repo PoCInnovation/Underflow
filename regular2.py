@@ -359,7 +359,6 @@ producerConfig = {
                 'bootstrap.servers': 'localhost:9092'
                  }
 
-agent = newAgent(0, consumerConfig, producerConfig, "cluster0")
-agent._setAgents([1])
-agent._setForbidenAgents([1])
-agent._initDataset()
+agent_two = newAgent(1, consumerConfig, producerConfig, "cluster0")
+agent_two._setAgents([0])
+agent_two._followerCycleLife()
