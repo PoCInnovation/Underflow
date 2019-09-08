@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jan 18 17:12:11 2020
-
-@author: _Rollo
+  * Copyright (c) 2019 _rollo Commit <slohan.stcroix@gmail.com>
+  *
+  * Any redistribution or copy of code is prohibited without the approval of the creator
+  *
 """
 
 # 1 =  colones
