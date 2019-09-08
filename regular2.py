@@ -3,7 +3,7 @@
 """
   * Copyright (c) 2019 _rollo Commit <slohan.stcroix@gmail.com>
   *
-  * Any redistribution or copy of code is prohibited without the approval of the creator
+  * 
   *
 """
 
