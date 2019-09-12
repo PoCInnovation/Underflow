@@ -12,7 +12,7 @@
 #score globale = cars + pedestrian des autre agent 
 #l'opposé de la fonction logarithme neperien
 
-import time
+from time import sleep
 import tensorflow as tf
 import numpy as np
 from threading import Thread, RLock
@@ -22,7 +22,7 @@ from json import dumps
 from json import loads
 
 
-
+CLOSE = -99
 INDEXCAR = 2 # mandatory
 INDEXPEDESTRIAN = 3 # mandatory
 SIZESTATE = 4  # optional
@@ -212,6 +212,8 @@ class Agent() :
         globalScore += self.state._getOtherAgentScore()
         return globalScore
     
+
+        
     def _take_action(self, eps):
         if np.random.uniform(0, 1) < eps:
             action = np.random.randint(0, 2)
@@ -248,6 +250,8 @@ class Agent() :
                 self._fromExtern(key, jsonData)
             elif fromWho >= 0 :
                 self._fromOtherAgent(key, jsonData, fromWho)
+        if fromWho == -1:
+            self._sendToManager(self.toolbox.managerTopic) #send state to manager
         fromWho = -2
         
     def _delivery_report(self, err, msg):
@@ -297,7 +301,7 @@ class Agent() :
     def _sendToManager(self, topic: str) :
         ownState = list(self.state._getOwnState()) 
         data = {"from": self.myId, "state" : ownState}   
-        self._sendTo(data, 0, topic)
+        self._sendTo(data, self.myId, topic)
 
     def _followerCycleLife(self) :
         saveState = np.array([0])
@@ -309,14 +313,22 @@ class Agent() :
                 print("Consumer error: {}".format(msg.error()))
                 continue
             jsonData = loads(msg.value().decode('utf-8'))
+            if (self._killConsume(jsonData) == CLOSE):
+                self.consumer.close()
+                break
+            print(jsonData, self.state.state)
             self._updateEnv(jsonData)
-            self._sendToManager(self.toolbox.managerTopic)
             if (np.array_equal(saveState, self.state._getState()) == False) :
                 self._broadcastMyState(self.toolbox.clusterTopic)
             saveState = self.state._getState()
-            print(self.state.state)
             
+    def _killConsume(self, jsonData) : 
+        for key in jsonData : 
+            if (key == "close"  and jsonData[key] == -1) :
+                return CLOSE
+
     def _managementCycleLife(self) :
+        sleep(5)
         self._broadcastInit()
         i = 0
         while True:
@@ -329,28 +341,39 @@ class Agent() :
                 continue
             jsonData = loads(msg.value().decode('utf-8'))
             print(jsonData)
+            sleep(1)
             for key in jsonData :
                 if key == "from" :
                     if (jsonData[key] == -1):
                         fromWho = -1
                     else : 
-                        fromWho = self._getQueueNumber(jsonData[key])
+                        fromWho = jsonData[key]
+        
                 if key == "state" :
                     if (jsonData[key][0] == 0) :
-                        if np.random.uniform(0, 1) < 0.5 :
+                        if np.random.uniform(0, 1) < 1 and jsonData[key][INDEXPEDESTRIAN] > 0 :
+                            data = {"from": -1, "cars" : jsonData[key][INDEXCAR] + 1, "pedestrian": jsonData[key][INDEXPEDESTRIAN] - 1}
+                            self._sendTo(data, fromWho, self.toolbox.clusterTopic)
+                        elif np.random.uniform(0, 1) < 1 and jsonData[key][INDEXPEDESTRIAN] <= 0:
                             data = {"from": -1, "cars" : jsonData[key][INDEXCAR] + 1}
                             self._sendTo(data, fromWho, self.toolbox.clusterTopic)
-                        if (jsonData[key][INDEXPEDESTRIAN] > 0) :
+                        elif jsonData[key][INDEXPEDESTRIAN] > 0 :
                             data = {"from": -1, "pedestrian": jsonData[key][INDEXPEDESTRIAN] - 1}
                             self._sendTo(data, fromWho, self.toolbox.clusterTopic)
                     else :
-                        if np.random.uniform(0, 1) < 0.3 :
+                        if np.random.uniform(0, 1) < 1 and jsonData[key][INDEXCAR] > 0:
+                            data = {"from": -1, "pedestrian" : jsonData[key][INDEXPEDESTRIAN] + 1, "cars": jsonData[key][INDEXCAR] - 1}
+                            self._sendTo(data, fromWho, self.toolbox.clusterTopic)
+                        elif np.random.uniform(0, 1) < 1 and jsonData[key][INDEXCAR] <= 0: 
                             data = {"from": -1, "pedestrian" : jsonData[key][INDEXPEDESTRIAN] + 1}
                             self._sendTo(data, fromWho, self.toolbox.clusterTopic)
-                        if (jsonData[key][INDEXCAR] > 0) :
+                        elif jsonData[key][INDEXCAR] > 0 :
                             data = {"from": -1, "cars": jsonData[key][INDEXCAR] - 1}
                             self._sendTo(data, fromWho, self.toolbox.clusterTopic)
-            if i > 1 :
+            if i > 900 :
+                self.consumer.close()
+                data = {"from": -1, "close": -1}
+                self._sendTo(data, fromWho, self.toolbox.clusterTopic)
                 break
             i += 1
 
@@ -368,14 +391,16 @@ class Agent() :
                 print("Consumer error: {}".format(msg.error()))
                 continue
             jsonData = loads(msg.value().decode('utf-8'))
+            if (self._killConsume(jsonData) == CLOSE):
+                self.consumer.close()
+                break
+            print(jsonData, self.state.state)
             if len(nextState) == (len(state) - 1) :
                 tmpNextState = self.state._getState()
                 nextState.append(tmpNextState)
             self._updateEnv(jsonData)
             tmpState = self.state._getState() #STATE GLOBAL
             tmpAction = self._take_action(eps)
-            self._sendToManager(self.toolbox.managerTopic) #send state to manager
-            print(self.state.state, self._getGlobalScore())
             if (np.array_equal(self.state.saveLight, self.state.light) == False) :
                 self._broadcastReverse(self.toolbox.clusterTopic) #SENDTOFORBIDEN TAKE INVERSE ACTION (TO INVERSE)
             tmpReward = self._getGlobalScore()
@@ -396,6 +421,7 @@ class Agent() :
                 nextState.clear()
                 if eps > 0.3 :
                     eps -= 0.1
+                    
     def _start(self) :
         if (self.classType == "influencer"):
             self._initDataset()
@@ -425,12 +451,12 @@ def newAgent(myId:int, consumerConfig: dict, producerConfig: dict, clusterTopic:
 consumerConfig = {
                 'bootstrap.servers': 'localhost:9092',
                 'group.id': 'manager',
-                'auto.offset.reset': 'end'
+                'auto.offset.reset': 'earliest'
                 }
 producerConfig = {
                 'bootstrap.servers': 'localhost:9092'
                  }
 
 agent = newAgent(0, consumerConfig, producerConfig, "cluster0", "manager0", "manager")
-agent._setAgents([0, 1])
+agent._setAgents([0])
 agent._start()

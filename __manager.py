@@ -22,7 +22,6 @@ from json import dumps
 from json import loads
 
 
-
 CLOSE = -99
 INDEXCAR = 2 # mandatory
 INDEXPEDESTRIAN = 3 # mandatory
@@ -183,7 +182,7 @@ class Agent() :
                         newForbidenAgents.append({_id : self.forbidenQueue})
                         self.forbidenQueue += 1
         self.forbidenAgents = list(newForbidenAgents)
-        
+    
     def _setConsumer(self, config:dict, topic: str) :
         self.consumer = Consumer(config)
         tp = TopicPartition(topic , self.myId)
@@ -262,6 +261,7 @@ class Agent() :
             print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
             
     def _sendTo(self, data: dict, to: int, topic: str) :
+        print("envois ", data ,"to ", to)
         self.producer.poll(0)
         self.producer.produce(topic, dumps(data).encode('utf-8'), callback=self._delivery_report, partition=to)
         self.producer.flush()
@@ -299,14 +299,8 @@ class Agent() :
     def _sendToManager(self, topic: str) :
         ownState = list(self.state._getOwnState()) 
         data = {"from": self.myId, "state" : ownState}   
-        print("send ", data, "to", 1)
-        self._sendTo(data, self.myId , topic)
-        
-    def _killConsume(self, jsonData) : 
-        for key in jsonData : 
-            if (key == "close" and jsonData[key] == -1) :
-                return CLOSE
-    
+        self._sendTo(data, self.myId, topic)
+
     def _followerCycleLife(self) :
         saveState = np.array([0])
         while True:
@@ -326,9 +320,12 @@ class Agent() :
                 self._broadcastMyState(self.toolbox.clusterTopic)
             saveState = self.state._getState()
             
-   
+    def _killConsume(self, jsonData) : 
+        for key in jsonData : 
+            if (key == "close" and jsonData[key] == -1) :
+                return CLOSE       
     def _managementCycleLife(self) :
-        sleep(5)
+        sleep(4)
         self._broadcastInit()
         i = 0
         while True:
@@ -348,7 +345,6 @@ class Agent() :
                         fromWho = -1
                     else : 
                         fromWho = jsonData[key]
-        
                 if key == "state" :
                     if (jsonData[key][0] == 0) :
                         if np.random.uniform(0, 1) < 1 and jsonData[key][INDEXPEDESTRIAN] > 0 :
@@ -376,7 +372,7 @@ class Agent() :
                 self._sendTo(data, fromWho, self.toolbox.clusterTopic)
                 break
             i += 1
-            
+
     def _initDataset(self) :
         eps = 1
         state = []
@@ -449,13 +445,13 @@ def newAgent(myId:int, consumerConfig: dict, producerConfig: dict, clusterTopic:
 
 consumerConfig = {
                 'bootstrap.servers': 'localhost:9092',
-                'group.id': 'cluster0',
+                'group.id': 'manager',
                 'auto.offset.reset': 'earliest'
                 }
 producerConfig = {
                 'bootstrap.servers': 'localhost:9092'
                  }
 
-agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0", "follower")
-agent._setAgents([0])
+agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0", "manager")
+agent._setAgents([1])
 agent._start()
