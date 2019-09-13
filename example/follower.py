@@ -20,3 +20,4 @@ producerConfig = {
 agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0", "follower")
 agent._setAgents([0])
 agent._start()
+agent._save()

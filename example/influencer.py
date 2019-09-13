@@ -22,3 +22,4 @@ agent = newAgent(0, consumerConfig, producerConfig,"cluster0", "manager0", "infl
 agent._setAgents([1])
 agent._setForbidenAgents([1])
 agent._start()
+agent._save()
