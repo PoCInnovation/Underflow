@@ -62,7 +62,7 @@ class Agent() :
             jsonData = loads(msg.value().decode('utf-8'))
             print(jsonData)
             sleep(1)
-            self.communication._managementDataSending(jsonData)
+            fromWho = self.communication._managementDataSending(jsonData)
             if i > self.nbIteration :
                 self.communication.consumer.close()
                 data = {"from": -1, "close": -1}

@@ -21,6 +21,7 @@ if __name__ == '__main__' :
     adminClient.delete_topics(["__consumer_offsets"])
     for i in range(len(topicList)) : 
         newTopics.append(NewTopic(topicList[i], partitions[i] , replications[i]))
+    print(newTopics)
     adminClient.create_topics(newTopics)
 
 

@@ -115,7 +115,8 @@ class Communication() :
                         self._sendTo(data, fromWho, self.clusterTopic)
                     elif jsonData[key][INDEXCAR] > 0 :
                         data = {"from": -1, "cars": jsonData[key][INDEXCAR] - 1}
-                        self._sendTo(data, fromWho, self.clusterTopic)     
+                        self._sendTo(data, fromWho, self.clusterTopic) 
+        return fromWho    
                         
 #<-------------------------------------- LISTENING -------------------------------------------------------------------------->
                 

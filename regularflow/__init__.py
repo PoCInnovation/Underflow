@@ -8,6 +8,7 @@
 """
 
 from .apiFlow import newAgent
+from .apiFlow import cycleManager
 
 
 

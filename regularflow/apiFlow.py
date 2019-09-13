@@ -25,6 +25,6 @@ def newAgent(myId:int, consumerConfig: dict, producerConfig: dict, clusterTopic:
     return agent
 
 def cycleManager(agents: list, nbs: list) :
-    for i in range(agents) : 
+    for i in range(len(agents)) : 
         agents[i].nbIteration = nbs[i]
         
