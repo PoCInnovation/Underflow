@@ -1,9 +1,9 @@
 Regularflow
 ========================================================
 
-this module  allows you to create trafic light clusters that interact together to regulate circulation
+This module  allows you to create trafic light clusters that interact together to regulate circulation.
 
-Install with setup:
+Install with setup :
 
     ./setup install
 
