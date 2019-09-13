@@ -9,7 +9,7 @@ Created on Fri Sep 13 09:23:52 2019
 from time import sleep
 import numpy as np
 from json import loads
-from .constant import INDEXCAR, INDEXPEDESTRIAN, CLOSE
+from .constant import INDEXCAR, INDEXPEDESTRIAN, CLOSE, SIZELAYERONE
 
 __all__ = ["Agent"]
 
@@ -173,3 +173,9 @@ class Agent() :
             return
         print("Error() : Unknow classType : ", self.classType)
         
+    def _save(self) :
+        self.qfunction.save_weights("./.save_" + self.classType + self.myId, save_format='tf')
+    
+    def _retore(self, path: str) :
+        self.qfunction(np.zeros([1, SIZELAYERONE]))
+        self.qfunction.load_weights(path)

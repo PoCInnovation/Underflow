@@ -7,8 +7,6 @@
 @autor - _Rollo alias Slohan SAINTE-CROIX
 """
 
-__version__ = "1.0.0"
-
 from .agent import Agent
 from .qfunction import Qfunction
 from .state import State
