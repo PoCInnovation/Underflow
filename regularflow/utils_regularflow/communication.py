@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Sep 13 10:38:04 2019
-
-@author: slo
+@author: _Rollo
 """
 
 from confluent_kafka import Consumer, Producer
 from confluent_kafka import TopicPartition
 from json import dumps
-from .constant import CLOSE
+from .constant import INDEXCAR, INDEXPEDESTRIAN, CLOSE
+import numpy as np
 
 __all__ = ["Communication"]
 
@@ -22,8 +21,9 @@ class Communication() :
         self.myId = myId
         self.consumer = None
         self.producer = None
-
-#<-------------------------------------- SENDING -------------------------------------------------------------------------->       
+        
+#<-------------------------------------- SENDING -------------------------------------------------------------------------->      
+        
     def _checkIfFollower(self, id_: int, forbidenList: list) :
         for follower in forbidenList :
             for key in follower :
@@ -88,6 +88,35 @@ class Communication() :
             if (key == "close"  and jsonData[key] == -1) :
                 return CLOSE
             
+    def _managementDataSending(self, jsonData: dict) :
+        for key in jsonData :
+            if key == "from" :
+                if (jsonData[key] == -1):
+                    fromWho = -1
+                else : 
+                    fromWho = jsonData[key]
+            if key == "state" :
+                if (jsonData[key][0] == 0) :
+                    if np.random.uniform(0, 1) < 1 and jsonData[key][INDEXPEDESTRIAN] > 0 :
+                        data = {"from": -1, "cars" : jsonData[key][INDEXCAR] + 1, "pedestrian": jsonData[key][INDEXPEDESTRIAN] - 1}
+                        self._sendTo(data, fromWho, self.clusterTopic)
+                    elif np.random.uniform(0, 1) < 1 and jsonData[key][INDEXPEDESTRIAN] <= 0:
+                        data = {"from": -1, "cars" : jsonData[key][INDEXCAR] + 1}
+                        self._sendTo(data, fromWho, self.clusterTopic)
+                    elif jsonData[key][INDEXPEDESTRIAN] > 0 :
+                        data = {"from": -1, "pedestrian": jsonData[key][INDEXPEDESTRIAN] - 1}
+                        self._sendTo(data, fromWho, self.clusterTopic)
+                else :
+                    if np.random.uniform(0, 1) < 1 and jsonData[key][INDEXCAR] > 0:
+                        data = {"from": -1, "pedestrian" : jsonData[key][INDEXPEDESTRIAN] + 1, "cars": jsonData[key][INDEXCAR] - 1}
+                        self._sendTo(data, fromWho, self.clusterTopic)
+                    elif np.random.uniform(0, 1) < 1 and jsonData[key][INDEXCAR] <= 0: 
+                        data = {"from": -1, "pedestrian" : jsonData[key][INDEXPEDESTRIAN] + 1}
+                        self._sendTo(data, fromWho, self.clusterTopic)
+                    elif jsonData[key][INDEXCAR] > 0 :
+                        data = {"from": -1, "cars": jsonData[key][INDEXCAR] - 1}
+                        self._sendTo(data, fromWho, self.clusterTopic)     
+                        
 #<-------------------------------------- LISTENING -------------------------------------------------------------------------->
                 
     def _getQueueNumber(self, _id: int, otherAgents: list) :
