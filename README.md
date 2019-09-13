@@ -1,17 +1,14 @@
-SM Lib - Proclame la bonne parole de sieurs Sam et Max
+Regularflow
 ========================================================
 
-Ce module proclame la bonne parole de sieurs Sam et Max. Puissent-t-ils
-retrouver une totale liberté de pensée cosmique vers un nouvel age
-reminiscent.
+this module  allows you to create trafic light clusters that interact together to regulate circulation
 
-Vous pouvez l'installer avec pip:
+Install with setup:
 
-    pip install sm_lib
+    ./setup install
 
-Exemple d'usage:
+Usage example :
 
-    >>> from sm_lib import proclamer
-    >>> proclamer()
+    Later...
 
-Ce code est sous licence WTFPL.
+This code is under license owner Slohan SAINTE-CROIX.
