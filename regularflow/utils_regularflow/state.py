@@ -7,6 +7,7 @@ Created on Fri Sep 13 10:38:43 2019
 """
 
 import numpy as np
+from time import process_time
 
 __all__ = ["State"]
 
@@ -24,6 +25,9 @@ class State() :
         self.otherAgentState: list = np.zeros([self.nbOtherAgents, np.size(self.ownState)])
         self.state = np.concatenate((self.light, self.nCars, self.nPedestrian, self.otherAgentState.flat))
         self.otherAgentScore: list = np.zeros([self.nbOtherAgents, 1])
+        self.clockCars = 0
+        self.clockPedestrian = 0
+        self.score = 0
         
     def _update(self) :
         self.light = np.array(self.light)
@@ -80,8 +84,17 @@ class State() :
         actual = self._getnCars() + self._getnPedestrian() 
         ancien = self._getSaveCars() + self._getSavePedestrian()
         score = ancien - actual
+        if (score > 0) :
+            score = 5
+        if (self._getnCars() < 5 and self._getnPedestrian() < 5):
+            score = 10
         self._setSave(saveCars=[self._getnCars()])
         self._setSave(savePedestrian=[self._getnPedestrian()])
+        if (self.light[0] == 0 and (self._getnCars() > 0)) :
+            score += ((process_time() - self.clockCars) * -1)
+        elif (self.light[0] == 1 and (self._getnPedestrian() > 0)) :
+            score += ((process_time() - self.clockPedestrian) * -1)
+        self.score = score
         return score
 
     #revoir le system de score si il y a beaucoup de voiture sur l'autre agent il faut passer au rouge pour augmenter son score

@@ -48,7 +48,7 @@ class Agent() :
         self.forbidenAgents = list(newForbidenAgents)
 
     def _managementCycleLife(self) :
-        sleep(5)
+        sleep(1)
         self.communication._broadcastInit(self.otherAgents)
         i = 0
         while True:
@@ -61,7 +61,7 @@ class Agent() :
                 continue
             jsonData = loads(msg.value().decode('utf-8'))
             print(jsonData)
-            sleep(1)
+            sleep(0.01)
             fromWho = self.communication._managementDataSending(jsonData)
             if i > self.nbIteration :
                 self.communication.consumer.close()
@@ -83,7 +83,7 @@ class Agent() :
             if (self.communication._killConsume(jsonData) == CLOSE):
                 self.communication.consumer.close()
                 break
-            print(jsonData, self.state.state)
+            print(jsonData, self.state.state, self.state.score)
             self.communication._updateEnv(jsonData, self.otherAgents, self.state)
             if (np.array_equal(saveState, self.state._getState()) == False) :
                 self.communication._broadcastMyState(self.otherAgents, self.state, self.forbidenAgents)
@@ -102,7 +102,7 @@ class Agent() :
             if (self.communication._killConsume(jsonData) == CLOSE):
                 self.communication.consumer.close()
                 break
-            print(jsonData, self.state.state)
+            print(jsonData, self.state.state, self.state.score)
             self.dataset._influencerDataProcess(jsonData, self.otherAgents, self.forbidenAgents)
 
     def _start(self) :
@@ -120,6 +120,6 @@ class Agent() :
     def _save(self) :
         self.qfunction.save_weights("./saves/save_" + self.classType + str(self.myId), save_format='tf')
     
-    def _retore(self, path: str) :
+    def _restore(self, path: str) :
         self.qfunction(np.zeros([1, SIZELAYERONE]))
         self.qfunction.load_weights(path)

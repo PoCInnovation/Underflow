@@ -9,7 +9,7 @@ Created on Fri Sep 13 11:52:15 2019
 from setuptools import setup, find_packages
 
 
-__version__ = "1.0.6"
+__version__ = "1.1.2"
 
 try:
     # for pip >= 10

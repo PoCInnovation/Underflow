@@ -8,6 +8,7 @@ Created on Fri Sep 13 10:39:59 2019
 
 import tensorflow as tf
 import numpy as np
+from time import process_time
 
 __all__ = ["Toolbox"]
 
@@ -33,5 +34,9 @@ class Toolbox() :
             action = self.qfunction(np.expand_dims(state._getState(), 0).astype("float64"))
             newLight = list(self._one_hot(np.argmax(action), 2))
         state._setState(light=newLight)
+        if (newLight[0] == 0) :
+            state.clockCars = process_time()
+        else:
+            state.clockPedestrian = process_time()
         return  newLight
     

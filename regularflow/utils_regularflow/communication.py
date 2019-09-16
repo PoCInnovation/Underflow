@@ -7,6 +7,7 @@
 from confluent_kafka import Consumer, Producer
 from confluent_kafka import TopicPartition
 from json import dumps
+from time import process_time
 from .constant import INDEXCAR, INDEXPEDESTRIAN, CLOSE
 import numpy as np
 
@@ -50,7 +51,7 @@ class Communication() :
         
     def _broadcastMyState(self, otherAgents: list, state: object, forbidenList: list) :
         ownState = list(state._getOwnState())
-        score = int(state._getScore())
+        score = float(state._getScore())
         data = {"from": self.myId, "state" : ownState, "score": score}
         for agent in otherAgents :
             for key in agent :
@@ -96,26 +97,42 @@ class Communication() :
                 else : 
                     fromWho = jsonData[key]
             if key == "state" :
+                nbPedestrian = jsonData[key][INDEXPEDESTRIAN]
+                nbCars = jsonData[key][INDEXCAR]
+                if (nbCars >= 4) :
+                    maxCars = np.random.randint(1, 4)
+                else : 
+                    maxCars = np.random.randint(0, nbCars + 1)
+                    if (maxCars == 0 and nbCars > 0) :
+                        maxCars = 1
+                if (nbPedestrian >= 4) :
+                    maxPedestrian = np.random.randint(1, 4)
+                else : 
+                    maxPedestrian = np.random.randint(0, nbPedestrian + 1)
+                    if (maxPedestrian == 0 and nbPedestrian > 0):
+                        maxPedestrian = 1
                 if (jsonData[key][0] == 0) :
-                    if np.random.uniform(0, 1) < 1 and jsonData[key][INDEXPEDESTRIAN] > 0 :
-                        data = {"from": -1, "cars" : jsonData[key][INDEXCAR] + 1, "pedestrian": jsonData[key][INDEXPEDESTRIAN] - 1}
+                    if nbPedestrian > 0 :
+                        data = {"from": -1, "cars" : nbCars + np.random.randint(0, 4), "pedestrian": nbPedestrian - maxPedestrian}
                         self._sendTo(data, fromWho, self.clusterTopic)
-                    elif np.random.uniform(0, 1) < 1 and jsonData[key][INDEXPEDESTRIAN] <= 0:
-                        data = {"from": -1, "cars" : jsonData[key][INDEXCAR] + 1}
+                    elif nbPedestrian <= 0:
+                        data = {"from": -1, "cars" : nbCars + np.random.randint(0, 4)}
                         self._sendTo(data, fromWho, self.clusterTopic)
-                    elif jsonData[key][INDEXPEDESTRIAN] > 0 :
-                        data = {"from": -1, "pedestrian": jsonData[key][INDEXPEDESTRIAN] - 1}
+                    elif nbPedestrian > 0 :
+                        data = {"from": -1, "pedestrian": nbPedestrian - maxPedestrian}
                         self._sendTo(data, fromWho, self.clusterTopic)
                 else :
-                    if np.random.uniform(0, 1) < 1 and jsonData[key][INDEXCAR] > 0:
-                        data = {"from": -1, "pedestrian" : jsonData[key][INDEXPEDESTRIAN] + 1, "cars": jsonData[key][INDEXCAR] - 1}
+                    if nbCars > 0:
+                        data = {"from": -1, "pedestrian" : nbPedestrian + np.random.randint(0, 4), "cars": nbCars - maxCars}
                         self._sendTo(data, fromWho, self.clusterTopic)
-                    elif np.random.uniform(0, 1) < 1 and jsonData[key][INDEXCAR] <= 0: 
-                        data = {"from": -1, "pedestrian" : jsonData[key][INDEXPEDESTRIAN] + 1}
+                    elif nbCars <= 0: 
+                        data = {"from": -1, "pedestrian" : nbPedestrian + np.random.randint(0, 4)}
                         self._sendTo(data, fromWho, self.clusterTopic)
-                    elif jsonData[key][INDEXCAR] > 0 :
-                        data = {"from": -1, "cars": jsonData[key][INDEXCAR] - 1}
+                    elif nbCars > 0 :
+                        data = {"from": -1, "cars": nbCars - maxCars}
                         self._sendTo(data, fromWho, self.clusterTopic) 
+                        
+                    
         return fromWho    
                         
 #<-------------------------------------- LISTENING -------------------------------------------------------------------------->
@@ -133,6 +150,10 @@ class Communication() :
             state._setOtherAgentScore(fromWho, jsonData[key])
         if key == "reverse" :
             state._setState(light=list(jsonData[key][::-1]))
+            if (state.light[0] == 0) :
+                state.clockCars = process_time()
+            else:
+                state.clockPedestrian = process_time()
             
     def _fromExtern(self, key: str, jsonData: dict, state: object) :
         if key == "cars" :
@@ -155,3 +176,4 @@ class Communication() :
         if fromWho == -1 :
             self._sendToManager(state) #send state to manager
         fromWho = -2
+        
