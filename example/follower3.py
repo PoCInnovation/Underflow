@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Sep 13 14:01:03 2019
+Created on Fri Sep 20 11:34:42 2019
 
 @author: slo
 """
@@ -17,7 +17,7 @@ producerConfig = {
                 'bootstrap.servers': 'localhost:9092'
                  }
 
-agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0", "follower")
-agent._setAgents([0, 2, 3])
+agent = newAgent(3, consumerConfig, producerConfig, "cluster0", "manager0", "follower")
+agent._setAgents([0, 1, 2])
 agent._start()
 agent._save()

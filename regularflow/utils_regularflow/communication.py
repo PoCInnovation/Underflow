@@ -51,8 +51,7 @@ class Communication() :
         
     def _broadcastMyState(self, otherAgents: list, state: object, forbidenList: list) :
         ownState = list(state._getOwnState())
-        score = float(state._getScore())
-        data = {"from": self.myId, "state" : ownState, "score": score}
+        data = {"from": self.myId, "state" : ownState, "score": state.score}
         for agent in otherAgents :
             for key in agent :
                 if (self._checkIfFollower(key, forbidenList) == False) :

@@ -16,8 +16,7 @@ class Dataset() :
         self.state = state
         self.toolbox = toolbox
 
-    def _influencerDataProcess(self, jsonData: dict, otherAgents: list, forbidenAgents: list) :
-        eps = 1
+    def _influencerDataProcess(self, jsonData: dict, otherAgents: list, forbidenAgents: list, eps: float) :
         state = []
         action = []
         reward = []
@@ -30,14 +29,17 @@ class Dataset() :
         tmpAction = self.toolbox._take_action(eps, self.state)
         if (np.array_equal(self.state.saveLight, self.state.light) == False) :
             self.communication._broadcastReverse(forbidenAgents, self.state) #SENDTOFORBIDEN TAKE INVERSE ACTION (TO INVERSE)
-        tmpReward = self.state._getGlobalScore()
+        
         if (np.array_equal(self.state.saveCars, self.state.nCars) == False or np.array_equal(self.state.savePedestrian, self.state.nPedestrian) == False) :
+            tmpReward = self.state._getGlobalScore() #update save
             self.communication._broadcastMyState(otherAgents, self.state, forbidenAgents) #SEND TO ALL MY OTHER AGENT MY STATE (TO EXTERN)
+        else :
+            tmpReward = self.state._getGlobalScore()    
         self.state._setSave([self.state._getnCars()], [self.state._getnPedestrian()], list(self.state._getLight()))
         state.append(tmpState)
         action.append(tmpAction)
         reward.append(tmpReward)
-        if len(state) == 101 and len(nextState) == 100:
+        if len(state) == 1001 and len(nextState) == 1000:
             state = state[0:-1]
             action = action[0:-1]
             reward = reward[0:-1]
@@ -46,8 +48,11 @@ class Dataset() :
             action.clear()
             reward.clear()
             nextState.clear()
-            if eps > 0.3 :
-                eps -= 0.1 
+            if eps >= 0.1 :
+                eps -= 0.1
+            if eps < 0 :
+                eps = 1.0
+        return eps       
                 
     def _train(self, states, rewards, next_states, actions, toolbox) :
         with tf.GradientTape() as Gt :

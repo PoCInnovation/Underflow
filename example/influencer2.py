@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Sep 13 14:01:03 2019
+Created on Fri Sep 20 11:32:01 2019
 
 @author: slo
 """
 
-from regularflow import newAgent
+from regularflow import newAgent 
 
 consumerConfig = {
                 'bootstrap.servers': 'localhost:9092',
-                'group.id': 'cluster0',
+                'group.id': 'cluster',
                 'auto.offset.reset': 'earliest'
                 }
 producerConfig = {
                 'bootstrap.servers': 'localhost:9092'
                  }
 
-agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0", "follower")
-agent._setAgents([0, 2, 3])
+
+agent = newAgent(2, consumerConfig, producerConfig,"cluster0", "manager0", "influencer")
+agent._setAgents([0, 1, 3])
+agent._setForbidenAgents([3])
 agent._start()
 agent._save()

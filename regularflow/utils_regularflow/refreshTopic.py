@@ -11,7 +11,7 @@ adminConfig = {
               }
 
 topicList = ["manager0", "cluster0"]
-partitions = [2, 2]
+partitions = [4, 4]
 replications = [1, 1]
 
 if __name__ == '__main__' :

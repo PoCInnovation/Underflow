@@ -18,6 +18,5 @@ producerConfig = {
 
 agent = newAgent(0, consumerConfig, producerConfig, "cluster0", "manager0", "manager")
 agent._setAgents([0])
-cycleManager([agent], [10000])
+cycleManager([agent], [1000])
 agent._start()
-agent._save()

@@ -61,7 +61,7 @@ class Agent() :
                 continue
             jsonData = loads(msg.value().decode('utf-8'))
             print(jsonData)
-            sleep(0.01)
+            sleep(1)
             fromWho = self.communication._managementDataSending(jsonData)
             if i > self.nbIteration :
                 self.communication.consumer.close()
@@ -71,7 +71,6 @@ class Agent() :
             i += 1
 
     def _followerCycleLife(self) :
-        saveState = np.array([0])
         while True:
             msg = self.communication.consumer.poll(1.0)
             if msg is None:
@@ -85,12 +84,12 @@ class Agent() :
                 break
             print(jsonData, self.state.state, self.state.score)
             self.communication._updateEnv(jsonData, self.otherAgents, self.state)
-            if (np.array_equal(saveState, self.state._getState()) == False) :
+            if ((np.array_equal(self.state.saveCars, self.state.nCars) == False) or (np.array_equal(self.state.savePedestrian, self.state.nPedestrian) == False)) :
                 self.communication._broadcastMyState(self.otherAgents, self.state, self.forbidenAgents)
-            saveState = self.state._getState()
+            self.state._setSave([self.state._getnCars()], [self.state._getnPedestrian()], list(self.state._getLight()))
             
     def _initDataset(self) :
-        
+        eps : float = 1.0
         while True:
             msg = self.communication.consumer.poll(1.0)
             if msg is None:
@@ -103,7 +102,7 @@ class Agent() :
                 self.communication.consumer.close()
                 break
             print(jsonData, self.state.state, self.state.score)
-            self.dataset._influencerDataProcess(jsonData, self.otherAgents, self.forbidenAgents)
+            eps = self.dataset._influencerDataProcess(jsonData, self.otherAgents, self.forbidenAgents, eps)
 
     def _start(self) :
         if (self.classType == "influencer"):
