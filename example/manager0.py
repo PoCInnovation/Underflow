@@ -5,7 +5,7 @@ Created on Fri Sep 13 13:58:14 2019
 
 @author: slo
 """
-from regularflow import newAgent, cycleManager
+from regularflow import newAgent, cycleManager, startDemo, startAgent
 
 consumerConfig = {
                 'bootstrap.servers': 'localhost:9092',
@@ -16,7 +16,7 @@ producerConfig = {
                 'bootstrap.servers': 'localhost:9092'
                  }
 
-agent = newAgent(0, consumerConfig, producerConfig, "cluster0", "manager0", "manager")
+agent = newAgent(0, consumerConfig, producerConfig, "cluster0", "manager0","display", "manager")
 agent._setAgents([0])
-cycleManager([agent], [1000])
-agent._start()
+cycleManager([agent], [30000])
+startAgent(agent)

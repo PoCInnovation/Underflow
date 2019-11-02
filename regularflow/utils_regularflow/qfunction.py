@@ -9,19 +9,22 @@ Created on Fri Sep 13 10:39:42 2019
 import tensorflow as tf
 from .constant import SIZELAYERONE
 
+
 __all__ = ["Qfunction"]
 
-class Qfunction(tf.keras.Model) :
+class Qfunction() :
     def __init__(self) :
-        super(Qfunction, self).__init__(name='Qfunction')
-        self.layerOne: object = tf.keras.layers.Dense(SIZELAYERONE, activation='relu', name='l1')
-        self.hidenLayer: object = tf.keras.layers.Dense(256, activation='relu', name='hl')
-        self.hidenLayerTwo: object = tf.keras.layers.Dense(128, activation='relu', name='hl')
-        self.out: object = tf.keras.layers.Dense(2, activation='linear', name='out')
-        
-    def call(self, env) :
-        layerOne: list = self.layerOne(env)
-        hidenLayer: list = self.hidenLayer(layerOne)
-        hidenLayerTwo: list = self.hidenLayerTwo(hidenLayer)
-        out: list = self.out(hidenLayerTwo)
-        return out
+        self.model = tf.keras.models.Sequential([
+            tf.keras.layers.InputLayer(input_shape=(SIZELAYERONE), dtype='float64'),
+            tf.keras.layers.Dense(128, activation='relu', dtype='float64'),
+            tf.keras.layers.Dropout(0.2, dtype='float64'),
+            tf.keras.layers.Dense(2, activation='linear', dtype='float64')
+        ])
+        self.model.compile(optimizer='adam',
+                    loss='MSE',
+                    metrics=['accuracy'])
+    def _saveModel(self, path: str):
+        tf.saved_model.save(self.model, path)
+
+    def _loadModel(self, path: str):
+        self.model = tf.saved_model.load(path)

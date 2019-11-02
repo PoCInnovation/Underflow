@@ -4,12 +4,13 @@
 """
 @name - regularflow
 @contains - API to use regularflow. You can create and delete Agents that communicate beetwen each other to regulate circulation by a training
-@autor - _Rollo alias Slohan SAINTE-CROIX
+@autor - Roloman alias Slohan SAINTE-CROIX
 """
 
 from .apiFlow import newAgent
 from .apiFlow import cycleManager
-
+from .apiFlow import startAgent
+from .apiFlow import startDemo
 
 
 

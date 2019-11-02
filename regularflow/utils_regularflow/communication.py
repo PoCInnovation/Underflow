@@ -8,20 +8,22 @@ from confluent_kafka import Consumer, Producer
 from confluent_kafka import TopicPartition
 from json import dumps
 from time import process_time
-from .constant import INDEXCAR, INDEXPEDESTRIAN, CLOSE
+from .constant import INDEXCAR, INDEXPEDESTRIAN, CLOSE, INDEXLIGHT
 import numpy as np
 
 __all__ = ["Communication"]
 
 class Communication() :
     
-    def __init__(self, clusterTopic, managerTopic, classType, myId) :
-        self.clusterTopic = clusterTopic
-        self.managerTopic = managerTopic
-        self.classType = classType
-        self.myId = myId
+    def __init__(self, clusterTopic: str, managerTopic: str, displayTopic: str, classType: str, myId: int) :
+        self.clusterTopic: str = clusterTopic
+        self.managerTopic: str = managerTopic
+        self.displayTopic: str = displayTopic
+        self.classType: str = classType
+        self.myId: int = myId
         self.consumer = None
         self.producer = None
+        self.checkPass = 0
         
 #<-------------------------------------- SENDING -------------------------------------------------------------------------->      
         
@@ -33,7 +35,7 @@ class Communication() :
         return False
     
     def _sendTo(self, data: dict, to: int, topic: str) :
-        print("envois ", data ,"to ", to)
+        #print("envois ", data ,"to ", to)
         self.producer.poll(0)
         self.producer.produce(topic, dumps(data).encode('utf-8'), callback=self._delivery_report, partition=to)
         self.producer.flush()
@@ -41,9 +43,9 @@ class Communication() :
     def _setConsumer(self, config:dict) :
         self.consumer = Consumer(config)
         if (self.classType == "manager") :
-            tp = TopicPartition(self.managerTopic , self.myId)
+            tp = TopicPartition(self.managerTopic, self.myId)
         else:
-            tp = TopicPartition(self.clusterTopic , self.myId)
+            tp = TopicPartition(self.clusterTopic, self.myId)
         self.consumer.assign([tp])
     
     def _setProducer(self, config:dict) :
@@ -66,13 +68,13 @@ class Communication() :
     def _broadcastReverse(self, forbidenAgents: list, state: object):
         light = list(state._getLight())
         data = {"from" : self.myId, "reverse": light}
-        for forbidenAgent in forbidenAgents :
-            for key in forbidenAgent :
+        for forbidenAgent in forbidenAgents:
+            for key in forbidenAgent:
                 self._sendTo(data, key, self.clusterTopic)
                 
     def _sendToManager(self, state: object) :
-        ownState = list(state._getOwnState()) 
-        data = {"from": self.myId, "state" : ownState}   
+        ownState = list(state._getOwnState())
+        data = {"from": self.myId, "state" : ownState}
         self._sendTo(data, self.myId, self.managerTopic)
         
     def _delivery_report(self, err, msg):
@@ -80,14 +82,42 @@ class Communication() :
         Triggered by poll() or flush(). """
         if err is not None :
             print('Message delivery failed: {}'.format(err))
-        else :
-            print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
+        #else :
+            #print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
 
     def _killConsume(self, jsonData) : 
         for key in jsonData : 
             if (key == "close"  and jsonData[key] == -1) :
                 return CLOSE
-            
+
+    def _killFollower(self, forbidenAgents: list):
+        data = {"from": -1, "close": -1}
+        for forbidenAgent in forbidenAgents:
+            for key in forbidenAgent:
+                self._sendTo(data, key, self.clusterTopic)
+
+    def _killManager(self, forbidenAgents: list):
+        data = {"from": -1, "close": -1}
+        for forbidenAgent in forbidenAgents:
+            for key in forbidenAgent:
+                self._sendTo(data, key, self.managerTopic)
+
+    def _killInfluencer(self, fromWho):
+        data = {"from": -1, "close": -1}
+        self._sendTo(data, fromWho, self.clusterTopic)
+
+    def _killDisplay(self, to):
+        data = {"from": -1, "close": -1}
+        self._sendTo(data, to, self.displayTopic)
+
+    def _resetState(self, fromWho):
+        data = {"from": -1, "cars": -1, "pedestrian": -1}
+        self._sendTo(data, fromWho, self.clusterTopic)
+
+    def _resetZeros(self, fromWho):
+        data = {"from": -1, "cars": 0, "pedestrian": 0}
+        self._sendTo(data, fromWho, self.clusterTopic)
+
     def _managementDataSending(self, jsonData: dict) :
         for key in jsonData :
             if key == "from" :
@@ -98,6 +128,12 @@ class Communication() :
             if key == "state" :
                 nbPedestrian = jsonData[key][INDEXPEDESTRIAN]
                 nbCars = jsonData[key][INDEXCAR]
+                if nbCars >= 60 or nbPedestrian >= 60:
+                    self._resetState(fromWho)
+                    break
+                if nbCars == -1 or nbPedestrian == -1 :
+                    self._resetZeros(fromWho)
+                    break
                 if (nbCars >= 4) :
                     maxCars = np.random.randint(1, 4)
                 else : 
@@ -117,9 +153,6 @@ class Communication() :
                     elif nbPedestrian <= 0:
                         data = {"from": -1, "cars" : nbCars + np.random.randint(0, 4)}
                         self._sendTo(data, fromWho, self.clusterTopic)
-                    elif nbPedestrian > 0 :
-                        data = {"from": -1, "pedestrian": nbPedestrian - maxPedestrian}
-                        self._sendTo(data, fromWho, self.clusterTopic)
                 else :
                     if nbCars > 0:
                         data = {"from": -1, "pedestrian" : nbPedestrian + np.random.randint(0, 4), "cars": nbCars - maxCars}
@@ -127,13 +160,24 @@ class Communication() :
                     elif nbCars <= 0: 
                         data = {"from": -1, "pedestrian" : nbPedestrian + np.random.randint(0, 4)}
                         self._sendTo(data, fromWho, self.clusterTopic)
-                    elif nbCars > 0 :
-                        data = {"from": -1, "cars": nbCars - maxCars}
-                        self._sendTo(data, fromWho, self.clusterTopic) 
                         
                     
         return fromWho    
-                        
+
+    def _sendToDisplay(self, jsonData, index, nbIteration):
+        for key in jsonData:
+            if key == "from":
+                if (jsonData[key] == -1):
+                    fromWho = -1
+                else:
+                    fromWho = jsonData[key]
+            if key == "state":
+                nbPedestrian = jsonData[key][INDEXPEDESTRIAN]
+                nbCars = jsonData[key][INDEXCAR]
+                light = jsonData[key][INDEXLIGHT]
+        data = {"from": fromWho, "light": light, "nbCars": nbCars, "nbPedestrian": nbPedestrian, "index": index, "nbIteration": nbIteration}
+        self._sendTo(data, self.myId, self.displayTopic)
+
 #<-------------------------------------- LISTENING -------------------------------------------------------------------------->
                 
     def _getQueueNumber(self, _id: int, otherAgents: list) :
@@ -145,22 +189,42 @@ class Communication() :
     def _fromOtherAgent(self, key: str, jsonData: dict, fromWho: int, state: object) :
         if key == "state" :
             state._setOtherAgentState(fromWho, jsonData[key])
-        if key == "score" :
-            state._setOtherAgentScore(fromWho, jsonData[key])
         if key == "reverse" :
             state._setState(light=list(jsonData[key][::-1]))
             if (state.light[0] == 0) :
                 state.clockCars = process_time()
             else:
                 state.clockPedestrian = process_time()
-            
+
+    def _updateMyFollowerScore(self, jsonData, index: int, forbidenList: list, state: object):
+        for key in jsonData:
+            if key == "from":
+                if (jsonData[key] == -1): #manager don't send score
+                    return
+                else:
+                    fromWho = jsonData[key]
+            if (self._checkIfFollower(fromWho, forbidenList) == True):
+                if key == "score":
+                    state._setOtherAgentScore(index, jsonData[key])
+
+    def _dump(self, state: object):
+        self.checkPass = 0
+        light = state._getLight()
+        if (light[0] == 1):
+            print("Vert -> ", end="")
+        else:
+            print("Rouge -> ", end="")
+        print("Cars:", state._getnCars(), " Pedestrian:", state._getnPedestrian())
+
     def _fromExtern(self, key: str, jsonData: dict, state: object) :
+        self.checkPass += 1
         if key == "cars" :
             state._setState(nCars=[jsonData[key]])
         if key == "pedestrian" :
             state._setState(nPedestrian=[jsonData[key]])
-
-    def _updateEnv(self, jsonData: dict, otherAgents: list, state: object) :
+        if self.checkPass == 3:
+            self._dump(state)
+    def _updateEnv(self, jsonData: dict, otherAgents: list, state: object, forbidenList: list) :
         fromWho = -2 
         for key in jsonData :
             if key == "from" :
@@ -174,5 +238,6 @@ class Communication() :
                 self._fromOtherAgent(key, jsonData, fromWho, state)
         if fromWho == -1 :
             self._sendToManager(state) #send state to manager
+        self._updateMyFollowerScore(jsonData, fromWho, forbidenList, state)
+        #print(jsonData," ", state._getLight())
         fromWho = -2
-        

@@ -6,7 +6,7 @@ Created on Fri Sep 20 11:34:42 2019
 @author: slo
 """
 
-from regularflow import newAgent
+from regularflow import newAgent, startDemo, startAgent
 
 consumerConfig = {
                 'bootstrap.servers': 'localhost:9092',
@@ -17,7 +17,6 @@ producerConfig = {
                 'bootstrap.servers': 'localhost:9092'
                  }
 
-agent = newAgent(3, consumerConfig, producerConfig, "cluster0", "manager0", "follower")
+agent = newAgent(3, consumerConfig, producerConfig, "cluster0", "manager0","display", "follower")
 agent._setAgents([0, 1, 2])
-agent._start()
-agent._save()
+startAgent(agent)

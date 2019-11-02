@@ -6,7 +6,7 @@ Created on Fri Sep 20 11:32:01 2019
 @author: slo
 """
 
-from regularflow import newAgent 
+from regularflow import newAgent, startDemo, startAgent
 
 consumerConfig = {
                 'bootstrap.servers': 'localhost:9092',
@@ -18,8 +18,9 @@ producerConfig = {
                  }
 
 
-agent = newAgent(2, consumerConfig, producerConfig,"cluster0", "manager0", "influencer")
+agent = newAgent(2, consumerConfig, producerConfig,"cluster0", "manager0", "display", "influencer")
 agent._setAgents([0, 1, 3])
 agent._setForbidenAgents([3])
-agent._start()
+#agent._restore("/home/roloman/projet-perso/regularflow/example/saves/save_influencer2")
+startAgent(agent)
 agent._save()

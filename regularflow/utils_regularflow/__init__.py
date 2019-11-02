@@ -4,7 +4,7 @@
 """
 @name - utils_regularflow
 @contains - All class and functions used in background regularflow's pipeline
-@autor - _Rollo alias Slohan SAINTE-CROIX
+@autor - Roloman alias Slohan SAINTE-CROIX
 """
 
 from .agent import Agent

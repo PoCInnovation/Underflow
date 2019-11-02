@@ -1,0 +1,6 @@
+root         252  0.0  0.0      0     0 ?        I<   10:45   0:00 [charger_manager]
+roloman   114876  2.6  5.5 11654768 906068 pts/7 Sl   16:30   0:02 python manager0.py
+roloman   114877  2.6  5.5 11652940 905652 pts/7 Sl   16:30   0:02 python manager1.py
+roloman   114878  2.6  5.5 11653504 903300 pts/7 Sl   16:30   0:02 python manager2.py
+roloman   114879  2.7  5.5 11653552 904248 pts/7 Sl   16:30   0:02 python manager3.py
+roloman   115801  0.0  0.0   6300  2320 pts/7    S+   16:31   0:00 grep --color=auto --exclude-dir=.bzr --exclude-dir=CVS --exclude-dir=.git --exclude-dir=.hg --exclude-dir=.svn manager

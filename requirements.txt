@@ -1,1 +1,3 @@
 numpy
+confluent-kafka
+tensorflow-gpu

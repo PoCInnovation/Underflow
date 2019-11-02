@@ -64,9 +64,9 @@ class State() :
         self._update()
     
     def _getState(self):
-        return np.array(self.state).astype("float64")
+        return np.array(self.state).astype('float64')
     def _getOwnState(self):
-        return np.array(self.ownState).astype("float64")
+        return np.array(self.ownState).astype('float64')
     def _getLight(self) :
         return self.light
     def _getnCars(self) :
@@ -83,6 +83,10 @@ class State() :
     def _getScore(self) :
         actual = self._getnCars() + self._getnPedestrian() 
         ancien = self._getSaveCars() + self._getSavePedestrian()
+        if (actual < 0) :
+            return -5
+        if (ancien < 0):
+            ancien = 0
         score = ancien - actual
         if (score > 0) :
             score = 5

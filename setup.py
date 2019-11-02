@@ -27,7 +27,7 @@ setup(
       install_requires=load_requirements("./requirements.txt"),
       version=__version__,
       packages=find_packages(),
-      author=" _Rollo (slohan SAINTE-CROIX) ",
+      author=" Roloman (slohan SAINTE-CROIX) ",
       author_email="None",
       description="API for regulate circulation",
       long_description=open('README.md').read(),
