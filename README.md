@@ -2,6 +2,7 @@ Regularflow
 ========================================================
 
 This module  allows you to create trafic light clusters that interact together to regulate circulation.
+Trafic lights are smart and can take decision in order to the environnement.
 
 Install with setup :
 
