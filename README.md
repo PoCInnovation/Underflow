@@ -6,7 +6,7 @@ Regularflow
 This module allows you to create trafic light clusters that interact together to regulate circulation.
 Trafic lights are smart and can take decision according to the environnement.
 
-I use Deep-renforcement learning for the first POC and Actor-Critic A2C for the next POC
+I use Deep-renforcement Q learning for the first POC and Actor-Critic A2C for the next POC
 
 # Introduction
 
