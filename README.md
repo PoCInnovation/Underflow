@@ -1,6 +1,8 @@
 Regularflow
 ========================================================
 
+(The project is under construction, the document will evolve you can ask me if you do not understand).
+
 This module allows you to create trafic light clusters that interact together to regulate circulation.
 Trafic lights are smart and can take decision according to the environnement.
 
@@ -88,7 +90,7 @@ agent._save() # specify the save for save this traffic light
 ## for an example go in the example directory and run in differents terminals : 
 * The code for initialisation topic's partitions
 * Influencer.py and Follower.py
-* Then Manager0.py and Manager1
+* Then Manager0.py and Manager1.py
 
 You can see the training mode
 
