@@ -6,8 +6,8 @@ Trafic lights are smart and can take decision according to the environnement.
 
 You need to have Apache Kafka and Zookeper for the Stream communication.
 
-First you need to create topic's partitions : One for Manager's communications and one to traffic lights communications
-*run this code in an python's interpreter
+#First you need to create topic's partitions : One for Manager's communications and one to traffic lights communications
+* run this code in an python's interpreter
 
 ```from confluent_kafka.admin import AdminClient, NewTopic
 
