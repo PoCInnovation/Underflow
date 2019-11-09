@@ -20,7 +20,7 @@ To create a cluster of traffic lights that communicate with each other for the r
 Managers are fake cameras to simulate the number of cars and pedestrians on the way of a traffic light. Each traffic lights has a manager who tells him the numbers of cars and pedestrians on his way.
 
 Depending on the numbers of cars and pedestrians the traffic lights are rewarded. Each traffic light knows the status of all the others traffic lights which are into the cluster. 
-If a traffic light is overbooked and causes the bottling of another traffic light, trafic lights will adapt to gain the most reward and therefore regulate the traffic
+If a traffic light is overbooked and causes the bottling of another traffic light, traffic lights will adapt to gain the most reward and therefore regulate the traffic
 
 You need to have Apache Kafka and Zookeper for the stream communication.
 
