@@ -9,12 +9,12 @@ I use Deep-renforcement learning for the first POC and Actor-Critic A2C for the 
 You need to have Apache Kafka and Zookeper for the stream communication.
 
 # First you need to create topic's partitions : 
-## One for Manager's communications and one to traffic lights communications
+## One for Manager's communications and one for traffic lights communications
 
 * Download apache kafka here https://kafka.apache.org/downloads
 * Install regularflow with setup :
 
-    ./setup install
+    ```./setup install```
 
 * Start a kafka's broker and a Zookeper's server
 * Run this code in an python's interpreter
@@ -83,7 +83,10 @@ agent._save() # specify the save for save this traffic light
 ```
 
 
-Usage example :
+# Usage example :
 
-    Once topic are created, you can found example of Usage 
+## for an example go in the example directory and run in two different terminal : 
+* influencer.py and follower.py
+* then run manager0 and manager1
+
 
