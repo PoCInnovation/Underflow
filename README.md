@@ -8,8 +8,16 @@ I use Deep-renforcement learning for the first POC and Actor-Critic A2C for the 
 
 You need to have Apache Kafka and Zookeper for the stream communication.
 
-# First you need to create topic's partitions : One for Manager's communications and one to traffic lights communications
-* run this code in an python's interpreter
+# First you need to create topic's partitions : 
+## One for Manager's communications and one to traffic lights communications
+
+* Download apache kafka here https://kafka.apache.org/downloads
+* Install regularflow with setup :
+
+    ./setup install
+
+* Start a kafka's broker and a Zookeper's server
+* Run this code in an python's interpreter
 
 ```from confluent_kafka.admin import AdminClient, NewTopic
 
@@ -67,16 +75,13 @@ producerConfig = {
 
 
 agent = newAgent(0, consumerConfig, producerConfig,"cluster0", "manager0", "display", "influencer")
-agent._setAgents([1])
-agent._setForbidenAgents([1])
-agent._restore("/home/roloman/projet-perso/regularflow/example/saves/save_influencer0")
-startDemo(agent)
-agent._save()
+agent._setAgents([1]) # set the id of other traffic lights in the cluster for communication
+agent._setForbidenAgents([1]) # set the follower's id of this influencer
+agent._restore("/home/roloman/projet-perso/regularflow/example/saves/save_influencer0") # setup the path of the the saved model
+startDemo(agent)  # start agent with startDemo for start with non-training mode
+agent._save() # specify the save for save this traffic light
 ```
 
-Install with setup :
-
-    ./setup install
 
 Usage example :
 
