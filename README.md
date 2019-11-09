@@ -8,6 +8,18 @@ Trafic lights are smart and can take decision according to the environnement.
 
 I use Deep-renforcement learning for the first POC and Actor-Critic A2C for the next POC
 
+# Introduction
+
+    There are two types of traffic lights. Influencers and Followers. 
+    Influencers are the traffic lights that train and followers are trafic lights symmetrical to their influencers. A follower will take the opposite action of an influencer. 
+    This allows the case managed two traffic lights that do not have to be green at the same time
+    
+    When we create an influencer we can assign him a follower and this follower will take the opposite actions of this influencer.
+    To create a cluster of traffic lights that communicate with each other for the regularisation of a zone it's simple. When we create a fire we give the id of the other traffic lights
+
+    Managers are fake cameras to simulate the number of cars and pedestrians on the way to a traffic light. Each traffic light has a manager who tells him the number of cars and pedestrians on his way
+Depending on the number of cars and pedestrians the traffic lights are rewarded. Each traffic light knows the status of all the other traffic lights in the cluster. If a traffic light is overbooked and causes the bottling of another traffic light, trafic lights will adapt to gain the most reward and therefore regulate the traffic
+
 You need to have Apache Kafka and Zookeper for the stream communication.
 
 # First you need to create topic's partitions : 
