@@ -85,8 +85,10 @@ agent._save() # specify the save for save this traffic light
 
 # Usage example :
 
-## for an example go in the example directory and run in two different terminal : 
-* influencer.py and follower.py
-* then run manager0 and manager1
+## for an example go in the example directory and run in differents terminals : 
+* The code for initialisation topic's partitions
+* Influencer.py and Follower.py
+* Then Manager0.py and Manager1
 
+You can see the training mode
 
