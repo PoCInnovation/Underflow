@@ -17,8 +17,10 @@ This allows the case managed two traffic lights that do not have to be green at 
 When we create an influencer we can assign him a follower and this follower will take the opposite actions of this influencer.
 To create a cluster of traffic lights that communicate with each other for the regularisation of a zone it's simple. When we create a fire we give the id of the other traffic lights
 
-Managers are fake cameras to simulate the number of cars and pedestrians on the way to a traffic light. Each traffic light has a manager who tells him the number of cars and pedestrians on his way
-Depending on the number of cars and pedestrians the traffic lights are rewarded. Each traffic light knows the status of all the other traffic lights in the cluster. If a traffic light is overbooked and causes the bottling of another traffic light, trafic lights will adapt to gain the most reward and therefore regulate the traffic
+Managers are fake cameras to simulate the number of cars and pedestrians on the way of a traffic light. Each traffic lights has a manager who tells him the numbers of cars and pedestrians on his way.
+
+Depending on the numbers of cars and pedestrians the traffic lights are rewarded. Each traffic light knows the status of all the others traffic lights which are into the cluster. 
+If a traffic light is overbooked and causes the bottling of another traffic light, trafic lights will adapt to gain the most reward and therefore regulate the traffic
 
 You need to have Apache Kafka and Zookeper for the stream communication.
 
