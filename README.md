@@ -8,7 +8,7 @@ You need to have Apache Kafka and Zookeper for the Stream communication.
 
 First you need to create cluster for
 
-``from confluent_kafka.admin import AdminClient, NewTopic
+```from confluent_kafka.admin import AdminClient, NewTopic
 
 adminConfig = {
                 'bootstrap.servers': 'localhost:9092'
@@ -28,7 +28,7 @@ if __name__ == '__main__' :
     print(newTopics)
     adminClient.create_topics(newTopics)
 
-``
+```
 Install with setup :
 
     ./setup install
