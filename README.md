@@ -24,6 +24,8 @@ If a traffic light is overbooked and causes the bottling of another traffic ligh
 
 You need to have Apache Kafka and Zookeper for the stream communication.
 
+![sheme](scheme.png "google logo")
+
 # First you need to create topic's partitions : 
 ## One for Manager's communications and one for traffic lights communications
 
