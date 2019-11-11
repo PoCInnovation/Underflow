@@ -1,7 +1,7 @@
 Regularflow
 ========================================================
 
-(The project is under construction, the document will evolve you can ask me if you do not understand).
+(The project is under construction, the document and code documentation will evolve you can ask me if you do not understand).
 
 This module allows you to create trafic light clusters that interact together to regulate circulation.
 Trafic lights are smart and can take decision according to the environnement.
