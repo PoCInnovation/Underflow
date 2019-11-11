@@ -11,7 +11,7 @@ I use Deep-renforcement Q learning for the first POC and Actor-Critic A3C for th
 # Introduction
 
 There are two types of traffic lights. Influencers and Followers. 
-Influencers are the traffic lights that train and followers are trafic lights symmetrical to their influencers. A follower will take the opposite action of an influencer. 
+Influencers are traffic lights that train and followers are trafic lights symmetrical to their influencers. A follower will take the opposite action of an influencer. 
 This allows the case managed two traffic lights that do not have to be green at the same time
     
 When we create an influencer we can assign him a follower and this follower will take the opposite actions of this influencer.
@@ -71,7 +71,7 @@ producerConfig = {
                 'bootstrap.servers': 'localhost:9092'
                  }
 
-agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0","display", "follower")  
+agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0","display", "follower")  # the first number is the id of the traffic light
 agent._setAgents([0]) # Here type the id of the other trafic light in the cluster for the communication
 startDemo(agent) # run the agent with startDemo for the non-training mode and with startAgent for the training mode
 ```
@@ -90,7 +90,7 @@ producerConfig = {
                  }
 
 
-agent = newAgent(0, consumerConfig, producerConfig,"cluster0", "manager0", "display", "influencer")
+agent = newAgent(0, consumerConfig, producerConfig,"cluster0", "manager0", "display", "influencer") # the first number is the id of the traffic light
 agent._setAgents([1]) # set the id of other traffic lights in the cluster for communication
 agent._setForbidenAgents([1]) # set the follower's id of this influencer
 agent._restore("/home/roloman/projet-perso/regularflow/example/saves/save_influencer0") # setup the path of the the saved model
