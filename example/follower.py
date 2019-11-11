@@ -19,4 +19,4 @@ producerConfig = {
 
 agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0","display", "follower")
 agent._setAgents([0])
-startDemo(agent)
+startAgent(agent)

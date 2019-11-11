@@ -142,10 +142,10 @@ class Agent() :
                 self.communication._killManager(self.forbidenAgents)
                 self.communication._killFollower(self.forbidenAgents)
                 break
-            #print(self.state.ownState, self.state.score, eps)
             if type == "demo":
                 self.dataset._influencerDataProcess(jsonData, self.otherAgents, self.forbidenAgents, eps)
             else:
+                print("( ", self.state.ownState, self.state.score, eps, " )")
                 eps = self.dataset._influencerDataProcess(jsonData, self.otherAgents, self.forbidenAgents, eps)
 
     def _start(self, timeSleep: float = 1.0) :

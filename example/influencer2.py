@@ -3,7 +3,7 @@
 """
 Created on Fri Sep 20 11:32:01 2019
 
-@author: slo
+@author: Roloman
 """
 
 from regularflow import newAgent, startDemo, startAgent

@@ -63,8 +63,23 @@ class Dataset() :
         return eps       
                 
     def _train(self, states, rewards, next_states, actions, toolbox) :
-        qtarget: list = toolbox._qtarget(rewards, 0.9, next_states)
-        toolbox.qfunction.model.fit(states, qtarget * actions, epochs=2)
+        rd_states = []
+        rd_rewards = []
+        rd_next_states = []
+        rd_actions = []
+        while (len(states) != 0):
+            i = np.random.randint(0, len(states))
+            rd_states.append(states[i])
+            rd_rewards.append(rewards[i])
+            rd_next_states.append(next_states[i])
+            rd_actions.append(actions[i])
+            states = np.delete(states, i, 0)
+            rewards = np.delete(rewards, i, 0)
+            next_states = np.delete(next_states, i, 0)
+            actions = np.delete(actions, i, 0)
+
+        qtarget: list = toolbox._qtarget(np.array(rd_rewards), 0.9, np.array(rd_next_states))
+        toolbox.qfunction.model.fit(np.array(rd_states), qtarget * np.array(rd_actions), epochs=2)
             #print("state", states)
             #print("nextState", next_states)
             #print("action", actions)
