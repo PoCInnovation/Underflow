@@ -1,7 +1,7 @@
 Regularflow
 ========================================================
 
-(The project is under construction, the document and code documentation will evolve you can ask me if you do not understand).
+(The project is under construction, the document and code documentation will evolve you can ask me if you don't understand).
 
 This module allows you to create trafic light clusters that interact together to regulate circulation.
 Trafic lights are smart and can take decision according to the environnement.
@@ -12,7 +12,7 @@ I use Deep-renforcement Q learning for the first POC and Actor-Critic A3C for th
 
 There are two types of traffic lights. Influencers and Followers. 
 Influencers are traffic lights that train and followers are trafic lights symmetrical to their influencers. A follower will take the opposite action of an influencer. 
-This allows the case managed two traffic lights that do not have to be green at the same time
+This allows the case managed two traffic lights that don't have to be green at the same time
     
 When we create an influencer we can assign him a follower and this follower will take the opposite actions of this influencer.
 To create a cluster of traffic lights that communicate with each other for the regularisation of a zone it's simple. When we create a fire we give the id of the other traffic lights
