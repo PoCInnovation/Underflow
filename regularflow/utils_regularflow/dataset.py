@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: _Rollo
+@author: Slo alias Slohan SAINTE-CROIX
 """
 
 from collections import namedtuple
