@@ -4,65 +4,110 @@
 @author: _Rollo
 """
 
-import tensorflow as tf
+from collections import namedtuple
+import random
 import numpy as np
+import torch.nn.functional as F
+import torch
+from .communication import Communication
+from .state import State
+from .toolbox import Toolbox
 
 __all__ = ["Dataset"]
 
+Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
+BATCH_SIZE = 128
+GAMMA = 0.999
+FIRST = True
+
+class Memory(object):
+
+    def __init__(self, capacity: int):
+        self.capacity: int = capacity
+        self.memory: list = []
+        self.position: int = 0
+
+    def push(self, *args: list):
+        """push a transition"""
+        if len(self.memory) < self.capacity:
+            self.memory.append(None)
+        self.memory[self.position] = Transition(*args)
+        self.position = (self.position + 1) % self.capacity
+
+    def batch(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)
 
 class Dataset() :
 
-    def __init__(self, communication: object, state: object, toolbox:object) :
+    def __init__(self, communication: Communication, state: State, toolbox: Toolbox, memory: Memory):
         self.communication = communication
         self.stateClass = state
         self.toolbox = toolbox
-        self.state = []
-        self.action = []
-        self.reward = []
-        self.nextState = []
-        self.index = 0
+        self.tState = []
+        self.tAction = []
+        self.tNext_State = []
+        self.tReward = []
+        self.memory = memory
 
-    def _influencerDataProcess(self, jsonData: dict, otherAgents: list, forbidenAgents: list, eps: float) :
+    def _resend(self, forbidenAgents: list, otherAgents: list):
+        global FIRST
+        if (np.array_equal(self.stateClass.saveLight, self.stateClass.light) == False or FIRST == True):
+            self.communication._broadcastReverse(forbidenAgents, self.stateClass)  # SENDTOFORBIDEN TAKE INVERSE ACTION (TO INVERSE)
+
+        if (np.array_equal(self.stateClass.saveCars, self.stateClass.nCars) == False or np.array_equal(self.stateClass.savePedestrian, self.stateClass.nPedestrian) == False or FIRST == True):
+            #reward = self.stateClass._getGlobalScore()  # update save
+            self.communication._broadcastMyState(otherAgents, self.stateClass, forbidenAgents)  # SEND TO ALL MY OTHER AGENT MY STATE (TO EXTERN)
+        FIRST = False
+        #else:
+            #reward = self.stateClass._getGlobalScore()
+       # return reward
+
+    def _influencerDataProcess(self, jsonData: dict, otherAgents: list, forbidenAgents: list, eps: float):
         self.communication._updateEnv(jsonData, otherAgents, self.stateClass, forbidenAgents)
-        if len(self.nextState) == (len(self.state) - 1) :
-            tmpNextState = self.stateClass._getState()
-            self.nextState.append(tmpNextState)
-        tmpState = self.stateClass._getState() #STATE GLOBAL
-        tmpAction = self.toolbox._take_action(eps, self.stateClass)
-        if (np.array_equal(self.stateClass.saveLight, self.stateClass.light) == False) :
-            self.communication._broadcastReverse(forbidenAgents, self.stateClass) #SENDTOFORBIDEN TAKE INVERSE ACTION (TO INVERSE)
-        
-        if (np.array_equal(self.stateClass.saveCars, self.stateClass.nCars) == False or np.array_equal(self.stateClass.savePedestrian, self.stateClass.nPedestrian) == False) :
-            tmpReward = self.stateClass._getGlobalScore() #update save
-            self.communication._broadcastMyState(otherAgents, self.stateClass, forbidenAgents) #SEND TO ALL MY OTHER AGENT MY STATE (TO EXTERN)
-        else:
-            tmpReward = self.stateClass._getGlobalScore()
+        if len(self.tState) != 0:
+            self.tNext_State = self.stateClass._getState()
+            self.tReward =  self.stateClass._getGlobalScore()
+            self.memory.push(self.tState, self.tAction, self.tNext_State, self.tReward)
+            self.tState = []
+            self.tAction = []
+            self.tNext_State = []
+            self.tReward = []
+            self._optimize()
+        self.tState = self.stateClass._getState() #STATE GLOBAL
+        #self.stateClass._setSave(saveLight=list(self.stateClass._getLight()))
+        self.tAction = self.toolbox._take_action(self.stateClass)
+        self._resend(forbidenAgents, otherAgents)
+        self.communication._checkFromAndSendManager(jsonData, self.stateClass)
         self.stateClass._setSave([self.stateClass._getnCars()], [self.stateClass._getnPedestrian()], list(self.stateClass._getLight()))
-        self.action.append(tmpAction)
-        if len(self.reward) == (len(self.state) - 1):
-            self.reward.append(tmpReward)
-        self.state.append(tmpState)
-        if len(self.state) == 33 and len(self.nextState) == 32: #101 100
-            if eps < 0.2:
-                return
-            state = self.state[0:-1]
-            action = self.action[0:-1]
-            self._train(np.array(state), np.expand_dims(self.reward, 1), np.array(self.nextState), np.array(action), self.toolbox)
-            self.state.clear()
-            self.action.clear()
-            self.reward.clear()
-            self.nextState.clear()
-            self.index += 1
-            if (self.index >= 10):
-                if eps > 0.2:
-                    eps = float(eps - 0.1)
-                if eps <= 0.2:
-                    eps = float(0.9)
-                self.index = 0
         return eps       
-                
-    def _train(self, states, rewards, next_states, actions, toolbox) :
+
+    def _optimize(self):
+        if len(self.memory) < BATCH_SIZE:
+            return
+        transitions = self.memory.batch(BATCH_SIZE)
+        batch = Transition(*zip(*transitions))
+        state = torch.Tensor(batch.state)
+        next_state = torch.Tensor(batch.next_state)
+        action = torch.Tensor(batch.action).long()
+        reward = torch.Tensor(batch.reward).long()
+        predictions: list = self.toolbox.qfunction(state)
+        prediction = (predictions * action).gather(1, action)[:, 1].view(-1, 1)
+        qtarget: list = self.toolbox._qtarget(reward, GAMMA, next_state)
+        loss = F.smooth_l1_loss(prediction, qtarget)
+        #print(f"state-{state}\naction-{action}\nnext-state-{next_state}\nreward-{reward}-prediction-{prediction}-predic{predictions}-qtarget-{qtarget}")
+        print(f"predition : {prediction}\nreward : {reward.sum()}")
+        self.toolbox.optimizer.zero_grad()
+        loss.backward()
+        for param in self.toolbox.qfunction.parameters():
+            param.grad.data.clamp_(-1, 1)
+        self.toolbox.optimizer.step()
+        print(f"loss : {loss}")
+
+    def _train(self, states, rewards, next_states, actions, toolbox):
         rd_states = []
         rd_rewards = []
         rd_next_states = []

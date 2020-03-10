@@ -13,5 +13,5 @@ from .state import State
 from .toolbox import Toolbox
 from .dataset import Dataset
 from .communication import Communication
-
+from .dataset import Memory
 

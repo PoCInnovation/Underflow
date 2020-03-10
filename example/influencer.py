@@ -21,6 +21,6 @@ producerConfig = {
 agent = newAgent(0, consumerConfig, producerConfig,"cluster0", "manager0", "display", "influencer")
 agent._setAgents([1])
 agent._setForbidenAgents([1])
-#agent._restore("/home/roloman/projet-perso/regularflow/example/saves/save_influencer0")
+agent._restore("/home/roloman/projet-perso/regularflow/example/saves/save_influencer0")
 startAgent(agent)
 agent._save()

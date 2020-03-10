@@ -6,25 +6,23 @@ Created on Fri Sep 13 10:39:42 2019
 @author: slo
 """
 
-import tensorflow as tf
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from .constant import SIZELAYERONE
 
 
 __all__ = ["Qfunction"]
 
-class Qfunction() :
-    def __init__(self) :
-        self.model = tf.keras.models.Sequential([
-            tf.keras.layers.InputLayer(input_shape=(SIZELAYERONE), dtype='float64'),
-            tf.keras.layers.Dense(128, activation='relu', dtype='float64'),
-            tf.keras.layers.Dropout(0.2, dtype='float64'),
-            tf.keras.layers.Dense(2, activation='linear', dtype='float64')
-        ])
-        self.model.compile(optimizer='adam',
-                    loss='MSE',
-                    metrics=['accuracy'])
-    def _saveModel(self, path: str):
-        tf.saved_model.save(self.model, path)
+class Qfunction(nn.Module):
+    def __init__(self):
+        super(Qfunction, self).__init__()
+        self.fc1 = nn.Linear(SIZELAYERONE, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.out = nn.Linear(64, 2)
 
-    def _loadModel(self, path: str):
-        self.model = tf.saved_model.load(path)
+    def forward(self, x) -> torch.Tensor:
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        out = self.out(x)
+        return out
