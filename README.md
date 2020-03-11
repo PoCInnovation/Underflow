@@ -37,7 +37,8 @@ You need to have Apache Kafka and Zookeper for the stream communication.
 * Start a kafka's broker and a Zookeper's server
 * Run this code in an python's interpreter
 
-```from confluent_kafka.admin import AdminClient, NewTopic
+```python
+from confluent_kafka.admin import AdminClient, NewTopic
 
 adminConfig = {
                 'bootstrap.servers': 'localhost:9092'
@@ -61,7 +62,7 @@ if __name__ == '__main__' :
 
 # Here it's an example of configuration trafic's light of type "follower"
 
-```
+```python
 from regularflow import newAgent, startDemo, startAgent
 
 consumerConfig = {
@@ -79,7 +80,7 @@ startDemo(agent) # run the agent with startDemo for the non-training mode and wi
 ```
 # Here it's an example of configuration trafic's light of type "influencer"
 
-```
+```python
 from regularflow import newAgent, startDemo, startAgent
 
 consumerConfig = {
@@ -110,3 +111,5 @@ agent._save() # specify the save for save this traffic light
 
 You can see the training mode
 
+## Author
+- [Slohan.S](https://github.com/L-Antique)
