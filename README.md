@@ -8,7 +8,7 @@ Trafic lights are smart and can take decision according to the environnement.
 
 I use Deep-renforcement Q learning for the first POC and Actor-Critic A3C for the next POC
 
-# Introduction
+## Introduction
 
 There are two types of traffic lights. Influencers and Followers. 
 Influencers are traffic lights that train and followers are trafic lights symmetrical to their influencers. A follower will take the opposite action of an influencer. 
@@ -26,10 +26,10 @@ You need to have Apache Kafka and Zookeper for the stream communication.
 
 ![sheme](scheme.png "google logo")
 
-# First you need to create topic's partitions : 
-## One for Manager's communications and one for traffic lights communications
+## First you need to create topic's partitions : 
+### One for Manager's communications and one for traffic lights communications
 
-* Download apache kafka here https://kafka.apache.org/downloads
+* Download apache kafka [here](https://kafka.apache.org/downloads).
 * Install regularflow with setup :
 
     ```./setup install```
@@ -60,7 +60,7 @@ if __name__ == '__main__' :
 
 ```
 
-# Here it's an example of configuration trafic's light of type "follower"
+## Example of configuration for a "follower" trafic light
 
 ```python
 from regularflow import newAgent, startDemo, startAgent
@@ -78,7 +78,8 @@ agent = newAgent(1, consumerConfig, producerConfig, "cluster0", "manager0","disp
 agent._setAgents([0]) # Here type the id of the other trafic light in the cluster for the communication
 startDemo(agent) # run the agent with startDemo for the non-training mode and with startAgent for the training mode
 ```
-# Here it's an example of configuration trafic's light of type "influencer"
+
+## Example of configuration for a "influencer" trafic light
 
 ```python
 from regularflow import newAgent, startDemo, startAgent
@@ -102,9 +103,9 @@ agent._save() # specify the save for save this traffic light
 ```
 
 
-# Usage example :
+## Usage example :
 
-## for an example go in the example directory and run in differents terminals : 
+### For an example, go in the example directory and run in differents terminals : 
 * The code for initialisation topic's partitions
 * Influencer.py and Follower.py
 * Then Manager0.py and Manager1.py
